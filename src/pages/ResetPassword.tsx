@@ -120,7 +120,7 @@ const ResetPassword: React.FC = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 relative">
       <a href="/" className="absolute top-6 left-6 flex items-center gap-2 hover:opacity-80 transition-opacity z-10">
          <div className="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30">
-            <img src='./src/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
+            <img src='/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
         </div>
         <span className="text-xl font-bold text-white">FluxoClean</span>
       </a>
@@ -249,3 +249,4 @@ const ResetPassword: React.FC = () => {
 };
 
 export default ResetPassword;
+
