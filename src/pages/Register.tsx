@@ -130,7 +130,7 @@ const Register: React.FC = () => {
             type: 'success', 
             message: 'Verifique sua caixa de entrada (e spam) para confirmar seu cadastro e criar sua senha.' 
         });
-        // Reset form? Or leave it? Leave it for now.
+        // Form is conceptually "done", user must check email.
       } else {
         setModalState({ isOpen: true, type: 'error', message: data.message || 'Erro ao iniciar cadastro.' });
       }
@@ -139,6 +139,15 @@ const Register: React.FC = () => {
     } finally {
         setLoading(false);
     }
+  };
+
+  const handleCloseModal = () => {
+      if (modalState.type === 'success') {
+          // Clean form and redirect to landing page
+          setFormData({ companyName: '', document: '', systemType: 'commerce', email: '' });
+          window.location.href = "https://fluxoclean.com.br";
+      }
+      setModalState({ ...modalState, isOpen: false });
   };
 
   const systemOptions = [
@@ -177,7 +186,7 @@ const Register: React.FC = () => {
         isOpen={modalState.isOpen} 
         type={modalState.type} 
         message={modalState.message} 
-        onClose={() => setModalState({ ...modalState, isOpen: false })} 
+        onClose={handleCloseModal} 
       />
 
       <div className="bg-gray-800 border border-gray-700 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-lg relative">
