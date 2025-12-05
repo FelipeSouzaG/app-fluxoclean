@@ -30,7 +30,6 @@ const ResetPassword: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [showInvalidModal, setShowInvalidModal] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState(checkPasswordStrength(''));
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -59,13 +58,11 @@ const ResetPassword: React.FC = () => {
       else setShowInvalidModal(true);
   }, [token]);
 
-  useEffect(() => {
-    setPasswordStrength(checkPasswordStrength(password));
-  }, [password]);
-
-  const isPasswordValid = Object.values(passwordStrength).every(Boolean);
+  // Validação de força da senha (Derivado, sem useEffect para evitar lag de estado)
+  const passwordStrength = useMemo(() => checkPasswordStrength(password), [password]);
+  const isPasswordValid = useMemo(() => Object.values(passwordStrength).every(Boolean), [passwordStrength]);
   
-  // Lógica de validação visual de confirmação
+  // Validação de confirmação (Derivado)
   const passwordsMatch = useMemo(() => {
       if (!confirmPassword) return null; // Campo vazio
       return password === confirmPassword;
@@ -123,7 +120,7 @@ const ResetPassword: React.FC = () => {
     <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4 relative">
       <a href="/" className="absolute top-6 left-6 flex items-center gap-2 hover:opacity-80 transition-opacity z-10">
          <div className="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30">
-            <img src="/img/fluxoclean.svg" alt="FluxoClean Logo" className="w-6 h-6" />
+            <img src='./src/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
         </div>
         <span className="text-xl font-bold text-white">FluxoClean</span>
       </a>
@@ -231,7 +228,7 @@ const ResetPassword: React.FC = () => {
 
               <button 
                 type="submit" 
-                disabled={submitting || !isPasswordValid || !passwordsMatch || !confirmPassword} 
+                disabled={submitting || !isPasswordValid || passwordsMatch !== true} 
                 className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
               >
                 {submitting ? (
@@ -252,4 +249,3 @@ const ResetPassword: React.FC = () => {
 };
 
 export default ResetPassword;
-
