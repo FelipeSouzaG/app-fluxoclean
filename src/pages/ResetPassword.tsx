@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { checkPasswordStrength } from '../validation';
 import NotificationModal from '../components/NotificationModal';
 import { FLUXOCLEAN_API } from '../config';
@@ -11,7 +11,7 @@ const InvalidTokenModal: React.FC<{ isOpen: boolean; onClose: () => void }> = ({
             <div className="bg-gray-800 border border-gray-700 rounded-xl shadow-2xl p-6 max-w-sm w-full text-center">
                 <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-900/50 mb-4">
                     <svg className="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                     </svg>
                 </div>
                 <h3 className="text-lg font-bold text-red-400 mb-2">Token Inválido</h3>
@@ -63,6 +63,12 @@ const ResetPassword: React.FC = () => {
   }, [password]);
 
   const isPasswordValid = Object.values(passwordStrength).every(Boolean);
+  
+  // Lógica de validação visual de confirmação
+  const passwordsMatch = useMemo(() => {
+      if (!confirmPassword) return null; // Campo vazio
+      return password === confirmPassword;
+  }, [password, confirmPassword]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -174,14 +180,39 @@ const ResetPassword: React.FC = () => {
                 </div>
               </div>
 
-              <input 
-                  type="password" placeholder="Confirmar Nova Senha" required
-                  className="bg-gray-900 border border-gray-600 text-white p-3.5 rounded-xl w-full focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all placeholder-gray-500"
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-              />
+              <div>
+                <input 
+                    type="password" placeholder="Confirmar Nova Senha" required
+                    className={`bg-gray-900 border text-white p-3.5 rounded-xl w-full focus:outline-none focus:ring-1 transition-all placeholder-gray-500 
+                        ${passwordsMatch === false ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-600 focus:border-indigo-500 focus:ring-indigo-500'}
+                        ${passwordsMatch === true ? 'border-green-500 focus:border-green-500 focus:ring-green-500' : ''}
+                    `}
+                    value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)}
+                />
+                {/* Validação Visual em tempo real */}
+                {confirmPassword && (
+                    <div className={`text-xs mt-1.5 font-bold flex items-center gap-1 ${passwordsMatch ? 'text-green-500' : 'text-red-500'}`}>
+                        {passwordsMatch ? (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                As senhas conferem
+                            </>
+                        ) : (
+                            <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                                As senhas não conferem
+                            </>
+                        )}
+                    </div>
+                )}
+              </div>
 
-              <button type="submit" disabled={submitting || !isPasswordValid} className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center">
+              <button 
+                type="submit" 
+                disabled={submitting || !isPasswordValid || !passwordsMatch || !confirmPassword} 
+                className="w-full py-3.5 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex justify-center items-center"
+              >
                 {submitting ? (
                     <>
                         <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
