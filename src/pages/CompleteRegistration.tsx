@@ -94,6 +94,14 @@ const CompleteRegistration: React.FC = () => {
         setPasswordStrength(checkPasswordStrength(password));
     }, [password]);
 
+    const handleCloseModal = () => {
+        setModalState({ ...modalState, isOpen: false });
+        if (modalState.type === 'error' && !tenantData) {
+            // Redirect to home if validation failed (token expired/invalid)
+            window.location.href = "https://fluxoclean.com.br";
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
@@ -145,7 +153,7 @@ const CompleteRegistration: React.FC = () => {
              {/* Background Decoration */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-green-600/10 rounded-full blur-[120px] -z-10"></div>
 
-            <NotificationModal isOpen={modalState.isOpen} type={modalState.type} message={modalState.message} onClose={() => !tenantData && setModalState({...modalState, isOpen: false})} />
+            <NotificationModal isOpen={modalState.isOpen} type={modalState.type} message={modalState.message} onClose={handleCloseModal} />
             
             {tenantData && (
                 <div className="bg-gray-800 border border-gray-700 p-8 rounded-3xl shadow-2xl w-full max-w-lg">
