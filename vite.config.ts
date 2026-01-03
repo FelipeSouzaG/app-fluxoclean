@@ -5,8 +5,11 @@ import tailwindcss from '@tailwindcss/vite';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   server: {
+    host: '0.0.0.0', // Mantido para acessibilidade
     port: 3000,
-    host: '0.0.0.0',
     strictPort: true,
+    // --- CORREÇÃO AQUI ---
+    allowedHosts: ['app.local.fluxoclean.com.br', 'host.docker.internal'],
+    // ---------------------
   },
 });
