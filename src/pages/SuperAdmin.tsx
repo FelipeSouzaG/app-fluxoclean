@@ -189,7 +189,7 @@ const HealthIcon: React.FC<{ status: HealthStatus }> = ({ status }) => {
 const DetailRow: React.FC<{ label: string; value: React.ReactNode; tooltip?: string }> = ({ label, value, tooltip }) => (
     <div className="mb-2 last:mb-0" title={tooltip}>
         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
-        <div className="text-sm text-gray-700 font-medium wrap-break-word">
+        <div className="text-sm text-gray-700 font-medium break-words">
             {value || '-'}
         </div>
     </div>
@@ -447,29 +447,102 @@ const BroadcastDetailsModal: React.FC<{ isOpen: boolean; broadcast: BroadcastMes
 
 const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName, request, onClose, onComplete }) => {
     const [mapsLink, setMapsLink] = useState('');
+    const payload = request?.payload || {};
+
     if (!isOpen || !request) return null;
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
-                <div className="p-6 border-b bg-indigo-600 text-white">
-                    <h3 className="text-xl font-bold">Execução de Serviço: Google Maps</h3>
-                    <p className="text-sm opacity-80 mt-1">{tenantName}</p>
-                </div>
-                <div className="p-6 space-y-6 max-h-[60vh] overflow-y-auto">
-                    <div className="bg-yellow-50 p-4 rounded border border-yellow-200 text-sm text-yellow-800">
-                        <p className="font-bold mb-1">Instruções:</p>
-                        <ol className="list-decimal list-inside space-y-1">
-                            <li>Acesse o Google Business Profile Manager.</li>
-                            <li>Cadastre a empresa com os dados da solicitação.</li>
-                            <li>Faça o upload das imagens fornecidas.</li>
-                            <li>Após a publicação, cole o link do Google Maps abaixo.</li>
-                        </ol>
-                    </div>
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b bg-indigo-600 text-white flex justify-between items-center">
                     <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">Link do Google Maps (Resultado)</label>
-                        <input type="text" className="w-full p-2 border rounded" placeholder="https://maps.google.com/..." value={mapsLink} onChange={e => setMapsLink(e.target.value)} />
+                        <h3 className="text-xl font-bold">Execução de Serviço: Google Maps</h3>
+                        <p className="text-sm opacity-80 mt-1">{tenantName}</p>
+                    </div>
+                    <button onClick={onClose} className="text-white hover:text-gray-200 text-2xl">&times;</button>
+                </div>
+                
+                <div className="flex flex-1 overflow-hidden">
+                    {/* Left Column: Request Details */}
+                    <div className="w-1/2 p-6 overflow-y-auto border-r border-gray-200 bg-gray-50">
+                        <h4 className="font-bold text-gray-800 mb-4 border-b pb-2">Dados da Solicitação</h4>
+                        
+                        <div className="space-y-4 text-sm">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Nome / Categoria</label>
+                                <p className="font-medium">{payload.contactInfo?.name || tenantName} - {payload.category}</p>
+                            </div>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Endereço Completo</label>
+                                <p className="bg-white p-2 rounded border border-gray-200 text-gray-700">{payload.contactInfo?.fullAddress || 'N/A'}</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Horários</label>
+                                <p className="text-gray-700">{payload.openingHours}</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Contatos</label>
+                                <p className="text-gray-700">Tel: {payload.contactInfo?.phone}</p>
+                                {payload.socialLinks?.website && <p className="text-gray-700">Site: {payload.socialLinks.website}</p>}
+                                {payload.socialLinks?.instagram && <p className="text-gray-700">Insta: {payload.socialLinks.instagram}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Descrição</label>
+                                <p className="bg-white p-2 rounded border border-gray-200 text-gray-600 text-xs italic">{payload.description}</p>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase">Serviços / Keywords</label>
+                                <p className="bg-white p-2 rounded border border-gray-200 text-gray-600 text-xs italic">{payload.services}</p>
+                            </div>
+
+                            {/* Images Gallery */}
+                            {payload.images && payload.images.length > 0 && (
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Imagens Enviadas</label>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {payload.images.map((img: any, idx: number) => (
+                                            <div key={idx} className="relative group">
+                                                <img src={img.data} alt={img.name} className="w-full h-24 object-cover rounded border border-gray-300" />
+                                                <div className="absolute bottom-0 left-0 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded-tr w-full truncate">
+                                                    {img.name}
+                                                </div>
+                                                <a href={img.data} download={`${tenantName}-${img.name}.jpg`} className="absolute top-1 right-1 bg-white p-1 rounded-full shadow opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <svg className="w-4 h-4 text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                                </a>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Right Column: Execution Form */}
+                    <div className="w-1/2 p-6 flex flex-col">
+                        <div className="bg-yellow-50 p-4 rounded border border-yellow-200 text-sm text-yellow-800 mb-6">
+                            <p className="font-bold mb-2">Instruções de Execução:</p>
+                            <ol className="list-decimal list-inside space-y-1 text-xs">
+                                <li>Acesse o <strong>Google Business Profile Manager</strong>.</li>
+                                <li>Use os dados ao lado para criar a ficha.</li>
+                                <li>Baixe e faça upload das imagens fornecidas.</li>
+                                <li>Realize a verificação (Postal/Telefone/Vídeo).</li>
+                                <li>Após publicado, cole o link final abaixo.</li>
+                            </ol>
+                        </div>
+                        
+                        <div className="mt-auto">
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Link do Google Maps (Resultado)</label>
+                            <input type="text" className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="https://maps.google.com/..." value={mapsLink} onChange={e => setMapsLink(e.target.value)} />
+                            <p className="text-xs text-gray-500 mt-2">Este link será enviado ao cliente e ativará o status "Confirmado".</p>
+                        </div>
                     </div>
                 </div>
+
                 <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
                     <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
                     <button onClick={() => onComplete(tenantId, request.referenceCode, mapsLink, false)} className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow disabled:opacity-50" disabled={!mapsLink}>Concluir e Notificar Cliente</button>
