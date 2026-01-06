@@ -1,3 +1,4 @@
+
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -8,8 +9,12 @@ export default defineConfig({
     host: '0.0.0.0', // Mantido para acessibilidade
     port: 3000,
     strictPort: true,
-    // --- CORREÇÃO AQUI ---
-    allowedHosts: ['app.local.fluxoclean.com.br', 'host.docker.internal'],
-    // ---------------------
+    // Permite que o Túnel acesse o dev server
+    allowedHosts: [
+      'app.local.fluxoclean.com.br', 
+      'fluxoclean.com.br',
+      'www.fluxoclean.com.br',
+      'host.docker.internal'
+    ],
   },
 });
