@@ -1,6 +1,9 @@
-const isProd =
-  window.location.hostname === 'fluxoclean.com.br' ||
-  window.location.hostname === 'www.fluxoclean.com.br';
+const hostname = window.location.hostname;
+
+// Considera produção se for o domínio oficial OU o domínio técnico do Cloudflare Pages
+const isProd = hostname === 'fluxoclean.com.br' || 
+               hostname === 'www.fluxoclean.com.br' || 
+               hostname.endsWith('.pages.dev');
 
 export const FLUXOCLEAN_API = isProd
   ? 'https://api.fluxoclean.com.br/api'
