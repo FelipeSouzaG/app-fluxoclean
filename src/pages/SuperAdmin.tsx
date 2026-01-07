@@ -1064,18 +1064,22 @@ const SuperAdmin: React.FC = () => {
         const list: { tenant: Tenant, request: Request }[] = [];
         tenants.forEach(t => {
             t.requests?.forEach(r => {
-                // FIXED LOGIC:
-                // Include Internal Requests (amount 0) if Pending
-                // Include Paid Requests (amount > 0) if Approved
-                // Include Upgrade/Ecommerce/Migrate if Approved
+                // LÓGICA DE FILTRAGEM DE TAREFAS MANUAIS
                 
-                const isGoogleMaps = r.type === 'google_maps';
-                const isEcommerce = r.type === 'ecommerce';
-                
-                const isPendingInternal = (isGoogleMaps || isEcommerce) && r.status === 'pending' && r.amount === 0;
-                const isApprovedPaid = r.status === 'approved' && r.amount > 0;
+                // 1. Solicitações Internas (Sistema -> Humano)
+                // Ex: O sistema ativou o e-commerce e criou um ticket para o humano atualizar o link no Google Maps
+                // Critério: Valor 0, Status Pendente, Tipo google_maps (usado para update de link)
+                const isInternalTask = r.amount === 0 && r.status === 'pending' && r.type === 'google_maps';
 
-                if (isPendingInternal || isApprovedPaid) {
+                // 2. Serviços Pagos que exigem execução manual
+                // Ex: Cliente pagou R$ 297 para cadastro no Google Maps ou Upgrade de Servidor
+                // Critério: Valor > 0, Status Aprovado (Pago)
+                // Tipos permitidos: 'google_maps' (Serviço Completo) e 'upgrade' (Provisionamento)
+                // Tipos EXCLUÍDOS: 'extension' (Automático), 'ecommerce' (Automático), 'monthly' (Automático)
+                const manualServiceTypes = ['google_maps', 'upgrade'];
+                const isPaidManualTask = r.amount > 0 && r.status === 'approved' && manualServiceTypes.includes(r.type);
+
+                if (isInternalTask || isPaidManualTask) {
                     list.push({ tenant: t, request: r });
                 }
             });
