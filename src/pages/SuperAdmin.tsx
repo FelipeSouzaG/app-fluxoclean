@@ -14,7 +14,7 @@ interface RequestPayload {
     hasExternalEcommerce?: boolean;
     isTrial?: boolean;
     generatedUrl?: string;
-    websiteUrl?: string; // Added this field from backend update
+    websiteUrl?: string; // Campo novo
     plan?: 'basic' | 'bundle';
     domainPreferences?: { domain: string; priority: number }[];
     requestedAt?: string;
@@ -51,13 +51,18 @@ interface AuditLog {
     timestamp: string;
 }
 
-// Added interface for Legal Agreement
 interface LegalAgreement {
     accepted: boolean;
     acceptedAt: string;
     version: string;
     ipAddress: string;
     userAgent: string;
+}
+
+interface Infrastructure {
+    dbPort?: number;
+    appPort?: number;
+    createdAt?: string;
 }
 
 interface Tenant {
@@ -78,7 +83,8 @@ interface Tenant {
   growthInfo?: { found: boolean; description: string; rating: number };
   telemetry?: Telemetry;
   auditLog?: AuditLog[];
-  legalAgreement?: LegalAgreement; // New field
+  infrastructure?: Infrastructure;
+  legalAgreement?: LegalAgreement; 
   activeServices?: {
       googleMaps: boolean;
       ecommerce: boolean;
@@ -330,6 +336,19 @@ const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onC
                                     <DetailRow label="Início Trial" value={new Date(tenant.createdAt).toLocaleDateString()} />
                                     <DetailRow label="Fim Trial" value={new Date(tenant.trialEndsAt).toLocaleDateString()} />
                                 </div>
+                                <div className="mt-4 pt-4 border-t border-gray-100">
+                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Infraestrutura</h4>
+                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                        <div className="bg-gray-50 p-2 rounded">
+                                            <span className="block text-gray-400 text-[10px]">API Port</span>
+                                            <span className="font-mono">{tenant.infrastructure?.appPort || 'N/A'}</span>
+                                        </div>
+                                        <div className="bg-gray-50 p-2 rounded">
+                                            <span className="block text-gray-400 text-[10px]">DB Port</span>
+                                            <span className="font-mono">{tenant.infrastructure?.dbPort || 'N/A'}</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
                                 <h3 className="font-bold text-gray-900 border-b pb-2 mb-2">📍 Endereço</h3>
@@ -443,7 +462,6 @@ const BroadcastDetailsModal: React.FC<{ isOpen: boolean; broadcast: BroadcastMes
         </div>
     );
 };
-
 const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName, request, onClose, onComplete }) => {
     const [mapsLink, setMapsLink] = useState('');
     const payload = request?.payload || {};
@@ -451,12 +469,15 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
     if (!isOpen || !request) return null;
     
     // VERIFICAÇÃO DE TIPO DE SERVIÇO: É APENAS ATUALIZAÇÃO DE LINK?
-    if (payload.category === 'Atualização de Site') {
-        const websiteUrl = payload.websiteUrl || payload.generatedUrl;
+    // Se o payload tiver category='Atualização de Site', usamos a interface simplificada.
+    const isWebsiteUpdate = payload.category === 'Atualização de Site';
+    const websiteUrlToInsert = payload.websiteUrl || payload.generatedUrl; // Fallback se não vier explícito
+
+    if (isWebsiteUpdate) {
         return (
             <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-fade-in border-4 border-green-500">
-                     <div className="p-6 border-b bg-green-50 text-center">
+                    <div className="p-6 border-b bg-green-50 text-center">
                          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
                               <path fillRule="evenodd" d="M10.854 8.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
@@ -479,9 +500,9 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Link da Loja (Copiar)</label>
                             <div className="flex gap-2">
-                                <input type="text" readOnly value={websiteUrl || 'URL não encontrada'} className="flex-1 p-3 bg-white border border-gray-300 rounded font-mono text-sm text-indigo-600" />
+                                <input type="text" readOnly value={websiteUrlToInsert || 'URL não encontrada'} className="flex-1 p-3 bg-white border border-gray-300 rounded font-mono text-sm text-indigo-600" />
                                 <button 
-                                    onClick={() => navigator.clipboard.writeText(websiteUrl)}
+                                    onClick={() => navigator.clipboard.writeText(websiteUrlToInsert)}
                                     className="px-3 bg-gray-200 hover:bg-gray-300 rounded text-gray-600"
                                     title="Copiar"
                                 >
@@ -494,7 +515,7 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
                     <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
                         <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
                         <button 
-                            onClick={() => onComplete(tenantId, request.referenceCode, '', false)} 
+                            onClick={() => onComplete(tenantId, request.referenceCode, websiteUrlToInsert, true)} 
                             className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow"
                         >
                             Feito
@@ -1047,8 +1068,18 @@ const SuperAdmin: React.FC = () => {
         const list: { tenant: Tenant, request: Request }[] = [];
         tenants.forEach(t => {
             t.requests?.forEach(r => {
-                const actionable = (['google_maps', 'ecommerce'].includes(r.type) && r.status === 'approved') || (r.type === 'upgrade' && r.status === 'approved');
-                if (actionable) {
+                // FIXED LOGIC:
+                // Include Internal Requests (amount 0) if Pending
+                // Include Paid Requests (amount > 0) if Approved
+                // Include Upgrade/Ecommerce/Migrate if Approved
+                
+                const isGoogleMaps = r.type === 'google_maps';
+                const isEcommerce = r.type === 'ecommerce';
+                
+                const isPendingInternal = (isGoogleMaps || isEcommerce) && r.status === 'pending' && r.amount === 0;
+                const isApprovedPaid = r.status === 'approved' && r.amount > 0;
+
+                if (isPendingInternal || isApprovedPaid) {
                     list.push({ tenant: t, request: r });
                 }
             });
@@ -1352,7 +1383,9 @@ const SuperAdmin: React.FC = () => {
                                                 </td>
                                                 <td className="px-6 py-4">
                                                     <div className="font-bold text-indigo-700 uppercase text-xs tracking-wider">{item.request.type.replace('_', ' ')}</div>
-                                                    <div className="text-xs text-green-600 font-bold mt-0.5">PAGO: {formatCurrency(item.request.amount)}</div>
+                                                    <div className={`text-xs font-bold mt-0.5 ${item.request.amount > 0 ? 'text-green-600' : 'text-blue-600'}`}>
+                                                        {item.request.amount > 0 ? `PAGO: ${formatCurrency(item.request.amount)}` : 'SOLICITAÇÃO INTERNA'}
+                                                    </div>
                                                 </td>
                                                 <td className="px-6 py-4 text-right">
                                                     <button 
