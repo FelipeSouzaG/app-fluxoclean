@@ -631,7 +631,6 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
 // --- AUTOMATED PROVISIONING MODAL ---
 const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onClose, onConfirm }) => {
     const [targetUrl, setTargetUrl] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState<'confirm' | 'provisioning' | 'success'>('confirm');
 
     if (!isOpen || !tenant || !request) return null;
@@ -645,7 +644,6 @@ const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onCl
     }, [tenant]);
 
     const handleProvisioning = async () => {
-        setIsLoading(true);
         setStep('provisioning');
 
         try {
@@ -672,8 +670,6 @@ const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onCl
             console.error(e);
             alert("Erro de conexão com o servidor.");
             setStep('confirm');
-        } finally {
-            setIsLoading(false);
         }
     };
 
