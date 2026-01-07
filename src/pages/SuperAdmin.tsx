@@ -14,6 +14,7 @@ interface RequestPayload {
     hasExternalEcommerce?: boolean;
     isTrial?: boolean;
     generatedUrl?: string;
+    websiteUrl?: string; // Added this field from backend update
     plan?: 'basic' | 'bundle';
     domainPreferences?: { domain: string; priority: number }[];
     requestedAt?: string;
@@ -189,7 +190,7 @@ const HealthIcon: React.FC<{ status: HealthStatus }> = ({ status }) => {
 const DetailRow: React.FC<{ label: string; value: React.ReactNode; tooltip?: string }> = ({ label, value, tooltip }) => (
     <div className="mb-2 last:mb-0" title={tooltip}>
         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
-        <div className="text-sm text-gray-700 font-medium break-words">
+        <div className="text-sm text-gray-700 font-medium wrap-break-word">
             {value || '-'}
         </div>
     </div>
@@ -287,7 +288,6 @@ const TelemetryModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onClose
         </div>
     );
 };
-
 const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onClose: () => void }> = ({ isOpen, tenant, onClose }) => {
     if(!isOpen || !tenant) return null;
     
@@ -419,7 +419,6 @@ const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onC
         </div>
     );
 };
-
 const BroadcastDetailsModal: React.FC<{ isOpen: boolean; broadcast: BroadcastMessage | null; onClose: () => void; onResend: (b: BroadcastMessage) => void }> = ({ isOpen, broadcast, onClose, onResend }) => {
     if (!isOpen || !broadcast) return null;
     return (
@@ -450,7 +449,63 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
     const payload = request?.payload || {};
 
     if (!isOpen || !request) return null;
+    
+    // VERIFICAÇÃO DE TIPO DE SERVIÇO: É APENAS ATUALIZAÇÃO DE LINK?
+    if (payload.category === 'Atualização de Site') {
+        const websiteUrl = payload.websiteUrl || payload.generatedUrl;
+        return (
+            <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
+                <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-fade-in border-4 border-green-500">
+                     <div className="p-6 border-b bg-green-50 text-center">
+                         <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4 text-green-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" viewBox="0 0 16 16">
+                              <path fillRule="evenodd" d="M10.854 8.146a.5.5 0 0 1 0 .708l-3 3a.5.5 0 0 1-.708 0l-1.5-1.5a.5.5 0 0 1 .708-.708L7.5 10.793l2.646-2.647a.5.5 0 0 1 .708 0"/>
+                              <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1m3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1z"/>
+                            </svg>
+                         </div>
+                        <h3 className="text-xl font-bold text-gray-800">Ativação de E-commerce</h3>
+                        <p className="text-sm text-gray-600 mt-2">O cliente {tenantName} ativou a loja virtual. Atualize o Google Maps.</p>
+                    </div>
+                    
+                    <div className="p-6 space-y-4">
+                        <div className="bg-gray-100 p-4 rounded-lg border border-gray-200">
+                            <p className="text-xs font-bold text-gray-500 uppercase mb-1">Ação Necessária</p>
+                            <p className="text-sm text-gray-800">
+                                1. Acesse o perfil da empresa no Google.<br/>
+                                2. No campo "Website", insira o link abaixo:
+                            </p>
+                        </div>
 
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Link da Loja (Copiar)</label>
+                            <div className="flex gap-2">
+                                <input type="text" readOnly value={websiteUrl || 'URL não encontrada'} className="flex-1 p-3 bg-white border border-gray-300 rounded font-mono text-sm text-indigo-600" />
+                                <button 
+                                    onClick={() => navigator.clipboard.writeText(websiteUrl)}
+                                    className="px-3 bg-gray-200 hover:bg-gray-300 rounded text-gray-600"
+                                    title="Copiar"
+                                >
+                                    📋
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
+                        <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
+                        <button 
+                            onClick={() => onComplete(tenantId, request.referenceCode, '', false)} 
+                            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow"
+                        >
+                            Feito
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Default Full Registration Modal (Existing Logic)
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -552,45 +607,111 @@ const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName,
     );
 };
 
+// --- AUTOMATED PROVISIONING MODAL ---
 const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onClose, onConfirm }) => {
     const [targetUrl, setTargetUrl] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [step, setStep] = useState<'confirm' | 'provisioning' | 'success'>('confirm');
+
     if (!isOpen || !tenant || !request) return null;
     const isBundle = request.payload?.plan === 'bundle';
     
+    // Auto-fill URL display (read-only expectation)
+    useEffect(() => {
+        if (!targetUrl && tenant.tenantName) {
+            setTargetUrl(`https://${tenant.tenantName}.fluxoclean.com.br`);
+        }
+    }, [tenant]);
+
+    const handleProvisioning = async () => {
+        setIsLoading(true);
+        setStep('provisioning');
+
+        try {
+            // New Automated Endpoint (No ports needed manually)
+            const response = await fetch(`${FLUXOCLEAN_API}/admin/tenants/${tenant._id}/provision`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                body: JSON.stringify({ 
+                    type: isBundle ? 'bundle' : 'basic' 
+                }),
+                credentials: 'include'
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setTargetUrl(data.data.targetUrl); 
+                setStep('success');
+            } else {
+                alert("Erro no provisionamento: " + data.message);
+                setStep('confirm');
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Erro de conexão com o servidor.");
+            setStep('confirm');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
              <div className="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
                 <div className="p-6 border-b bg-purple-700 text-white">
-                    <h3 className="text-xl font-bold">Provisionamento {isBundle ? 'Combo' : (request.type === 'ecommerce' ? 'E-commerce' : 'Single Tenant')}</h3>
+                    <h3 className="text-xl font-bold">Provisionamento Automático</h3>
                     <p className="text-sm opacity-80 mt-1">{tenant.name}</p>
                 </div>
+                
                 <div className="p-6 space-y-6">
-                    <div className="bg-blue-50 p-4 rounded border border-blue-200 text-sm text-blue-800">
-                        <p className="font-bold mb-2">Checklist Técnico:</p>
-                        <ul className="list-disc list-inside space-y-1">
-                            {request.type === 'ecommerce' ? (
-                                <li>Provisionar container Storefront.</li>
-                            ) : (
-                                <>
-                                    <li>Provisionar Banco de Dados Isolado (MongoDB).</li>
-                                    <li>Subir Container da API dedicada.</li>
-                                    <li>Subir Container do App dedicado.</li>
-                                    {isBundle && <li>Provisionar container Storefront.</li>}
-                                    <li>Configurar DNS e SSL.</li>
-                                </>
-                            )}
-                        </ul>
-                    </div>
-                    
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1">URL Final do Ambiente</label>
-                        <input type="text" className="w-full p-2 border rounded font-mono text-sm" placeholder="https://app.cliente.com.br" value={targetUrl} onChange={e => setTargetUrl(e.target.value)} />
-                        <p className="text-xs text-gray-500 mt-1">O cliente será notificado para acessar este endereço.</p>
-                    </div>
+                    {step === 'confirm' && (
+                        <div className="text-center space-y-4">
+                            <div className="bg-blue-50 p-4 rounded border border-blue-200 text-sm text-blue-800 text-left">
+                                <p className="font-bold mb-2">Pronto para iniciar:</p>
+                                <p>O sistema irá alocar automaticamente as portas e criar os containers isolados para este cliente.</p>
+                            </div>
+                            <div className="text-left">
+                                <p className="text-xs text-gray-500 uppercase font-bold">Tipo</p>
+                                <p className="font-bold">{isBundle ? 'Exclusive + E-commerce' : 'Exclusive Básico'}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {step === 'provisioning' && (
+                        <div className="text-center py-8">
+                             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                             <p className="text-gray-600 font-bold">Provisionando Infraestrutura...</p>
+                             <p className="text-xs text-gray-400 mt-2">Alocando portas, subindo DB e API.</p>
+                        </div>
+                    )}
+
+                    {step === 'success' && (
+                        <div className="text-center space-y-4">
+                             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 text-green-600 mb-2">✓</div>
+                             <h4 className="text-lg font-bold text-gray-800">Infraestrutura Criada!</h4>
+                             <div>
+                                <label className="block text-sm font-bold text-gray-700 mb-1">URL do Ambiente</label>
+                                <input type="text" className="w-full p-2 border rounded font-mono text-sm bg-gray-50 text-center" value={targetUrl} readOnly />
+                            </div>
+                            <p className="text-xs text-gray-500">O cliente receberá um e-mail para migrar.</p>
+                        </div>
+                    )}
                 </div>
+
                 <div className="p-6 border-t bg-gray-50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
-                    <button onClick={() => onConfirm(targetUrl)} disabled={!targetUrl} className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded shadow disabled:opacity-50">Confirmar Provisionamento</button>
+                    {step === 'confirm' && (
+                        <>
+                            <button onClick={onClose} className="px-4 py-2 text-gray-600 hover:bg-gray-200 rounded">Cancelar</button>
+                            <button onClick={handleProvisioning} className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded shadow">🚀 Iniciar Provisionamento</button>
+                        </>
+                    )}
+                    {step === 'provisioning' && (
+                         <button disabled className="px-6 py-2 bg-gray-300 text-white font-bold rounded cursor-not-allowed">Aguarde...</button>
+                    )}
+                    {step === 'success' && (
+                        <button onClick={() => onConfirm(targetUrl)} className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white font-bold rounded shadow">Concluir Ordem</button>
+                    )}
                 </div>
              </div>
         </div>
