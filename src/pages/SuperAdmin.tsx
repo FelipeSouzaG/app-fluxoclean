@@ -18,6 +18,13 @@ interface RequestPayload {
     plan?: 'basic' | 'bundle';
     domainPreferences?: { domain: string; priority: number }[];
     requestedAt?: string;
+    legalAgreement?: { // Payload histórico de requests
+        accepted: boolean;
+        acceptedAt?: string;
+        version: string;
+        ipAddress: string;
+        userAgent: string;
+    };
     [key: string]: any; 
 }
 
@@ -59,6 +66,15 @@ interface LegalAgreement {
     userAgent: string;
 }
 
+interface EcommerceLegalAgreement {
+    accepted: boolean;
+    acceptedAt: string;
+    version: string;
+    ipAddress: string;
+    userAgent: string;
+    domainRequested?: string;
+}
+
 interface Infrastructure {
     dbPort?: number;
     appPort?: number;
@@ -85,6 +101,7 @@ interface Tenant {
   auditLog?: AuditLog[];
   infrastructure?: Infrastructure;
   legalAgreement?: LegalAgreement; 
+  ecommerceLegalAgreement?: EcommerceLegalAgreement; // Novo campo vindo do StoreConfig
   activeServices?: {
       googleMaps: boolean;
       ecommerce: boolean;
@@ -105,7 +122,7 @@ interface BroadcastMessage {
 // ===================================
 // GLOBAL COMPONENTS & MODALS
 // ===================================
-
+// ... (NotificationModal and ActionConfirmationModal remain unchanged) ...
 const NotificationModal: React.FC<{ isOpen: boolean; type: 'success' | 'error'; message: string; onClose: () => void }> = ({ isOpen, type, message, onClose }) => {
     if (!isOpen) return null;
     return (
@@ -155,7 +172,7 @@ const ActionConfirmationModal: React.FC<{
 // ===================================
 // HEALTH CHECK LOGIC & COMPONENTS
 // ===================================
-
+// ... (Unchanged) ...
 type HealthStatus = 'critical' | 'warning' | 'opportunity' | 'healthy' | 'new';
 
 const getTenantHealth = (tenant: Tenant): { status: HealthStatus; reason: string; diagnosis: string; action: string } => {
@@ -196,7 +213,7 @@ const HealthIcon: React.FC<{ status: HealthStatus }> = ({ status }) => {
 const DetailRow: React.FC<{ label: string; value: React.ReactNode; tooltip?: string }> = ({ label, value, tooltip }) => (
     <div className="mb-2 last:mb-0" title={tooltip}>
         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
-        <div className="text-sm text-gray-700 font-medium wrap-break-word">
+        <div className="text-sm text-gray-700 font-medium break-words">
             {value || '-'}
         </div>
     </div>
@@ -205,7 +222,7 @@ const DetailRow: React.FC<{ label: string; value: React.ReactNode; tooltip?: str
 // ===================================
 // MODALS
 // ===================================
-
+// ... (TelemetryModal unchanged) ...
 const TelemetryModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onClose: () => void }> = ({ isOpen, tenant, onClose }) => {
     if (!isOpen || !tenant) return null;
 
@@ -294,6 +311,7 @@ const TelemetryModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onClose
         </div>
     );
 };
+
 const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onClose: () => void }> = ({ isOpen, tenant, onClose }) => {
     if(!isOpen || !tenant) return null;
     
@@ -301,6 +319,9 @@ const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onC
     const formatCurrency = (val: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
     
     const financialHistory = tenant.requests?.filter(r => ['approved', 'completed', 'waiting_switch'].includes(r.status)) || [];
+
+    // Find historic legal agreements in requests if not present in main config
+    const historicLegalRequests = tenant.requests?.filter(r => r.payload && r.payload.legalAgreement).reverse() || [];
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
@@ -412,23 +433,62 @@ const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onC
 
                     {activeTab === 'legal' && (
                          <div className="space-y-6">
+                            {/* Card 1: Termos Gerais (Acesso) */}
                             {tenant.legalAgreement && tenant.legalAgreement.accepted ? (
                                 <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
                                     <div className="flex items-center gap-2 mb-4 text-green-600">
-                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                                        <h3 className="font-bold text-lg">Termos de Uso Aceitos</h3>
+                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 0 0-1.414-1.414L9 10.586 7.707 9.293a1 1 0 0 0-1.414 1.414l2 2a1 1 0 0 0 1.414 0l4-4z" clipRule="evenodd" /></svg>
+                                        <h3 className="font-bold text-lg">Termos de Uso Gerais (Setup)</h3>
                                     </div>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
                                         <DetailRow label="Data do Aceite" value={new Date(tenant.legalAgreement.acceptedAt).toLocaleString()} />
                                         <DetailRow label="Versão do Contrato" value={tenant.legalAgreement.version || 'v1.0'} />
                                         <DetailRow label="IP de Origem" value={tenant.legalAgreement.ipAddress} />
-                                        <DetailRow label="User Agent (Navegador)" value={tenant.legalAgreement.userAgent} tooltip={tenant.legalAgreement.userAgent} />
+                                        <DetailRow label="User Agent" value={tenant.legalAgreement.userAgent} tooltip={tenant.legalAgreement.userAgent} />
                                     </div>
                                 </div>
                             ) : (
                                 <div className="bg-yellow-50 p-6 rounded-xl border border-yellow-200 text-center">
-                                    <p className="text-yellow-800 font-bold mb-2">Termos não aceitos</p>
-                                    <p className="text-sm text-yellow-700">Este cliente ainda não completou o aceite dos termos de uso ou os dados não foram sincronizados.</p>
+                                    <p className="text-yellow-800 font-bold mb-2">Termos Gerais não aceitos</p>
+                                    <p className="text-sm text-yellow-700">Este cliente ainda não completou o aceite dos termos de uso iniciais.</p>
+                                </div>
+                            )}
+
+                            {/* Card 2: Termos E-commerce (Ativos) */}
+                            {tenant.ecommerceLegalAgreement && tenant.ecommerceLegalAgreement.accepted && (
+                                <div className="bg-white p-6 rounded-xl border border-indigo-200 shadow-sm relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-2 h-full bg-indigo-500"></div>
+                                    <div className="flex items-center gap-2 mb-4 text-indigo-700">
+                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 16 16"><path d="M11 6a3 3 0 1 1-6 0 3 3 0 0 1 6 0"/><path fillRule="evenodd" d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8m8-7a7 7 0 0 0-5.468 11.37C3.242 11.226 4.805 10 8 10s4.757 1.225 5.468 2.37A7 7 0 0 0 8 1"/></svg>
+                                        <h3 className="font-bold text-lg">Responsabilidade E-commerce (Atual)</h3>
+                                    </div>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                                        <DetailRow label="Data do Aceite" value={new Date(tenant.ecommerceLegalAgreement.acceptedAt || '').toLocaleString()} />
+                                        <DetailRow label="Versão Específica" value={tenant.ecommerceLegalAgreement.version} />
+                                        <DetailRow label="IP de Origem" value={tenant.ecommerceLegalAgreement.ipAddress} />
+                                        <DetailRow label="Domínio Solicitado" value={tenant.ecommerceLegalAgreement.domainRequested || 'N/A'} />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Histórico de Solicitações (Audit Trail) */}
+                            {historicLegalRequests.length > 0 && (
+                                <div className="mt-8 pt-6 border-t border-gray-200">
+                                    <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Histórico de Aceites (Eventos)</h4>
+                                    <div className="space-y-3">
+                                        {historicLegalRequests.map((req, idx) => (
+                                            <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-200 text-sm">
+                                                <div className="flex justify-between mb-2">
+                                                    <span className="font-bold text-gray-700">{req.type === 'ecommerce' ? 'Ativação Trial' : 'Migração Bundle'}</span>
+                                                    <span className="text-gray-500">{new Date(req.payload!.legalAgreement!.acceptedAt!).toLocaleString()}</span>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                                                    <p>IP: {req.payload!.legalAgreement!.ipAddress}</p>
+                                                    <p>Versão: {req.payload!.legalAgreement!.version}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             )}
                          </div>
@@ -438,6 +498,7 @@ const TenantDetailsModal: React.FC<{ isOpen: boolean; tenant: Tenant | null; onC
         </div>
     );
 };
+// ... (Rest of SuperAdmin remains largely unchanged) ...
 const BroadcastDetailsModal: React.FC<{ isOpen: boolean; broadcast: BroadcastMessage | null; onClose: () => void; onResend: (b: BroadcastMessage) => void }> = ({ isOpen, broadcast, onClose, onResend }) => {
     if (!isOpen || !broadcast) return null;
     return (
@@ -735,10 +796,7 @@ const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onCl
     );
 };
 
-// ===================================
-// MAIN PAGE COMPONENT
-// ===================================
-
+// ... (SuperAdmin Main Component remains as provided, no logic changes needed here as we updated the modal directly) ...
 const SuperAdmin: React.FC = () => {
     const [tenants, setTenants] = useState<Tenant[]>([]);
     const [activeTab, setActiveTab] = useState<'financial' | 'tenants' | 'services' | 'communication'>('financial');
