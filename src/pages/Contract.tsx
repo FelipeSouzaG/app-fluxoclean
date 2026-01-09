@@ -12,13 +12,13 @@ const Contract: React.FC = () => {
                         </div>
                         <span className="text-xl font-bold text-indigo-900">FluxoClean</span>
                     </a>
-                    <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">Versão 1.0 (2025)</span>
+                    <span className="text-xs font-mono text-gray-500 bg-gray-100 px-2 py-1 rounded">Versão 1.1 (2026)</span>
                 </div>
             </header>
 
             <main className="container mx-auto px-6 py-12 max-w-4xl">
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">Termos de Uso e Política de Privacidade</h1>
-                <p className="text-gray-500 mb-8">Última atualização: 01 de Janeiro de 2025</p>
+                <p className="text-gray-500 mb-8">Última atualização: 01 de Janeiro de 2026</p>
 
                 <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-200 space-y-8 text-sm leading-relaxed">
                     
@@ -61,6 +61,13 @@ const Contract: React.FC = () => {
                     <section>
                         <h2 className="text-lg font-bold text-indigo-900 mb-3 uppercase tracking-wide">6. Google Business Profile</h2>
                         <p>Ao solicitar a gestão ou cadastro no Google Maps através de nossa plataforma, você outorga poderes à FluxoClean para editar e atualizar os dados da sua empresa em seu nome. A aprovação, verificação e permanência da ficha dependem exclusivamente das diretrizes do Google.</p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-lg font-bold text-indigo-900 mb-3 uppercase tracking-wide">7. Termos Específicos: E-commerce e Domínios</h2>
+                        <p className="mb-2"><strong>7.1 Mandato de Registro:</strong> Ao contratar planos que incluem "Domínio Próprio" (ex: Bundle), o CONTRATANTE outorga à FluxoClean poderes para adquirir e gerenciar o domínio (URL) em seu nome junto aos órgãos competentes (Registro.br, etc). O domínio será registrado com os dados do CONTRATANTE sempre que possível.</p>
+                        <p className="mb-2"><strong>7.2 Subdomínios (Trial):</strong> Em planos de degustação (Trial), o endereço fornecido é um subdomínio de propriedade da FluxoClean. O uso indevido deste subdomínio para práticas de spam, phishing ou atividades ilegais resultará no cancelamento imediato e banimento da conta.</p>
+                        <p className="mb-2"><strong>7.3 Chargebacks e Fraudes:</strong> O Lojista é inteiramente responsável pela gestão de risco de suas vendas. A FluxoClean fornece a tecnologia, mas não intermedeia financeiramente as vendas entre Lojista e Consumidor final, não se responsabilizando por chargebacks, fraudes de cartão ou disputas comerciais.</p>
                     </section>
 
                     <hr className="border-gray-200" />
