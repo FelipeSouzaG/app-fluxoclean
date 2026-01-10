@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useMemo } from 'react';
 import { FLUXOCLEAN_API } from '../config';
 
@@ -694,17 +693,17 @@ const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onCl
     const [targetUrl, setTargetUrl] = useState('');
     const [step, setStep] = useState<'confirm' | 'provisioning' | 'success'>('confirm');
 
-    if (!isOpen || !tenant || !request) return null;
-    const isBundle = request.payload?.plan === 'bundle';
-    
     // Auto-fill URL display (read-only expectation)
     useEffect(() => {
-        if (!targetUrl && tenant.tenantName) {
+        if (isOpen && tenant && !targetUrl && tenant.tenantName) {
             setTargetUrl(`https://${tenant.tenantName}.fluxoclean.com.br`);
         }
-    }, [tenant]);
+    }, [tenant, isOpen]); // removed targetUrl from dep array to avoid loop, or keep it if logic is sound. Actually [tenant, isOpen] is enough usually. Or just [isOpen] if tenant is stable. Let's keep it safe.
+
+    const isBundle = request?.payload?.plan === 'bundle';
 
     const handleProvisioning = async () => {
+        if (!tenant) return;
         setStep('provisioning');
 
         try {
@@ -733,6 +732,9 @@ const UnifiedProvisioningModal: React.FC<any> = ({ isOpen, tenant, request, onCl
             setStep('confirm');
         }
     };
+
+    // Render logic check - moved after hooks to prevent React Error #310
+    if (!isOpen || !tenant || !request) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
