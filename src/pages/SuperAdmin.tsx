@@ -184,7 +184,7 @@ const HealthIcon: React.FC<{ status: string }> = ({ status }) => {
 const DetailRow: React.FC<{ label: string; value: React.ReactNode; tooltip?: string }> = ({ label, value, tooltip }) => (
     <div className="mb-2 last:mb-0" title={tooltip}>
         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">{label}</label>
-        <div className="text-sm text-gray-700 font-medium break-words">
+        <div className="text-sm text-gray-700 font-medium wrap-break-word">
             {value || '-'}
         </div>
     </div>
