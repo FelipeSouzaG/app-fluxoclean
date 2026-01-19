@@ -8,7 +8,7 @@ const Contract: React.FC = () => {
                 <div className="container mx-auto px-6 py-4 flex justify-between items-center">
                     <a href="/" className="flex items-center gap-3">
                         <div className="bg-indigo-600/20 p-1.5 rounded-lg border border-indigo-500/30">
-                            <img src='./src/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
+                            <img src='/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
                         </div>
                         <span className="text-xl font-bold text-indigo-900">FluxoClean</span>
                     </a>
@@ -83,3 +83,4 @@ const Contract: React.FC = () => {
 };
 
 export default Contract;
+
