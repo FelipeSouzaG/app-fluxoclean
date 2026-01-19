@@ -322,7 +322,7 @@ const LandingPage: React.FC = () => {
       <footer className="bg-gray-900 border-t border-gray-800 py-10">
         <div className="container mx-auto px-6 text-center">
             <div className="flex justify-center items-center gap-2 mb-4 opacity-50 grayscale hover:grayscale-0 transition-all">
-                <img src='./src/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
+                <img src='/img/fluxoclean.svg' alt="FluxoClean Logo" className="w-6 h-6" />
                 <span className="font-bold text-lg">FluxoClean</span>
             </div>
             <p className="text-gray-500 text-sm">
