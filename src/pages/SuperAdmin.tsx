@@ -33,7 +33,8 @@ interface Request {
     status: 'pending' | 'waiting_payment' | 'approved' | 'rejected' | 'completed';
     requestedAt: string;
     amount: number;
-    referenceCode?: string;
+    referenceCode: string;
+    preferenceId?: string;
     payload?: RequestPayload;
 }
 
@@ -257,34 +258,162 @@ const BroadcastDetailsModal: React.FC<{ isOpen: boolean; broadcast: BroadcastMes
     );
 };
 
-// ... GoogleMapsExecutionModal remains similar, just removed specific provision references if any ...
 const GoogleMapsExecutionModal: React.FC<any> = ({ isOpen, tenantId, tenantName, request, onClose, onComplete }) => {
     const [mapsLink, setMapsLink] = useState('');
     const payload = request?.payload || {};
 
     if (!isOpen || !request) return null;
     
+    // Identifica se é atualização ou cadastro novo para mudar o título
     const isWebsiteUpdate = payload.category === 'Atualização de Site';
     const websiteUrlToInsert = payload.websiteUrl || payload.generatedUrl;
 
+    // Helper para download
+    const downloadImage = (dataUrl: string, filename: string) => {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col animate-fade-in border-4 border-green-500">
-                 {/* ... (Simplified Content for brevity, same as original logic) ... */}
-                 <div className="p-6">
-                     <h3 className="font-bold mb-4">{isWebsiteUpdate ? 'Atualização de Site' : 'Cadastro Google Maps'}</h3>
-                     <p className="text-sm mb-4">Cliente: {tenantName}</p>
-                     {!isWebsiteUpdate && (
-                         <input type="text" className="w-full border p-2 mb-4" placeholder="Link do Google Maps" value={mapsLink} onChange={e => setMapsLink(e.target.value)} />
-                     )}
-                     {isWebsiteUpdate && (
-                         <p className="bg-gray-100 p-2 text-sm mb-4">{websiteUrlToInsert}</p>
-                     )}
-                     <div className="flex justify-end gap-2">
-                         <button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancelar</button>
-                         <button onClick={() => onComplete(tenantId, request.referenceCode, mapsLink, false)} className="px-4 py-2 bg-green-600 text-white rounded">Concluir</button>
-                     </div>
-                 </div>
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden flex flex-col max-h-[90vh] animate-fade-in">
+                {/* Header */}
+                <div className={`p-5 flex justify-between items-center ${isWebsiteUpdate ? 'bg-orange-600' : 'bg-green-600'} text-white`}>
+                    <div>
+                        <h3 className="text-xl font-bold">{isWebsiteUpdate ? 'Atualização de Site (Link)' : 'Cadastro Google Maps'}</h3>
+                        <p className="text-sm opacity-90">Cliente: {tenantName}</p>
+                    </div>
+                    <button onClick={onClose} className="text-white hover:bg-white/20 rounded-full p-2">✕</button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 bg-gray-50 flex flex-col gap-6">
+                    
+                    {/* Seção 1: Instruções e Dados Rápidos */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <h4 className="font-bold text-gray-700 mb-3 border-b pb-2">Instruções de Execução</h4>
+                            <ul className="text-sm text-gray-600 space-y-2 list-disc pl-4">
+                                {isWebsiteUpdate ? (
+                                    <>
+                                        <li>Acesse o perfil do cliente no <strong>Google Business Profile</strong>.</li>
+                                        <li>Edite o campo <strong>Website</strong>.</li>
+                                        <li>Insira a URL abaixo e salve.</li>
+                                        <li>Copie o link público do perfil (Maps) e cole no campo ao final para concluir.</li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li>Use os dados abaixo para criar a ficha no Google.</li>
+                                        <li>Baixe as fotos (Logo, Fachada, Interior) e faça o upload.</li>
+                                        <li>Preencha descrição, horário e contatos exatamente como solicitado.</li>
+                                        <li>Após criar, copie o link de compartilhamento do perfil e cole abaixo.</li>
+                                    </>
+                                )}
+                            </ul>
+                        </div>
+
+                        <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                            <h4 className="font-bold text-gray-700 mb-3 border-b pb-2">Dados de Contato</h4>
+                            <div className="space-y-1 text-sm">
+                                <p><span className="font-semibold">Responsável:</span> {payload.contactInfo?.name || '-'}</p>
+                                <p><span className="font-semibold">Telefone:</span> {payload.contactInfo?.phone || '-'}</p>
+                                <p><span className="font-semibold">Endereço Completo:</span></p>
+                                <p className="bg-gray-100 p-2 rounded text-xs font-mono">{payload.contactInfo?.fullAddress || '-'}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Seção 2: URL do Site (Destaque se for atualização) */}
+                    {isWebsiteUpdate && websiteUrlToInsert && (
+                        <div className="bg-orange-50 border border-orange-200 p-4 rounded-xl text-center">
+                            <p className="text-sm font-bold text-orange-800 uppercase mb-1">URL para inserir no Campo Website</p>
+                            <code className="block text-lg font-mono bg-white border border-orange-300 p-3 rounded text-orange-900 select-all">
+                                {websiteUrlToInsert}
+                            </code>
+                        </div>
+                    )}
+
+                    {/* Seção 3: Imagens (Apenas se houver) */}
+                    {payload.images && payload.images.length > 0 && (
+                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                            <h4 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                Imagens para Upload
+                            </h4>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                {payload.images.map((img: any, idx: number) => (
+                                    <div key={idx} className="border border-gray-200 rounded-lg p-2 flex flex-col items-center gap-2">
+                                        <div className="h-32 w-full bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                                            <img src={img.data} alt={img.name} className="max-h-full max-w-full object-contain" />
+                                        </div>
+                                        <div className="w-full flex justify-between items-center px-1">
+                                            <span className="text-xs font-bold text-gray-600 uppercase">{img.name}</span>
+                                            <button 
+                                                onClick={() => downloadImage(img.data, `${tenantName}-${img.name}.jpg`)}
+                                                className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded hover:bg-indigo-100 font-bold"
+                                            >
+                                                Baixar
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Seção 4: Dados Detalhados (Aparece se não for apenas update de link, ou se tiver dados) */}
+                    {!isWebsiteUpdate && (
+                        <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
+                            <h4 className="font-bold text-gray-700 border-b pb-2">Ficha Técnica</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-3">
+                                    <DetailRow label="Categoria" value={payload.category} />
+                                    <DetailRow label="Horário" value={payload.openingHours} />
+                                    <DetailRow label="Descrição" value={payload.description} />
+                                </div>
+                                <div className="space-y-3">
+                                    <DetailRow label="Serviços / Produtos" value={payload.services} />
+                                    <DetailRow label="Site" value={payload.socialLinks?.website} />
+                                    <DetailRow label="Instagram" value={payload.socialLinks?.instagram} />
+                                    <DetailRow label="TikTok" value={payload.socialLinks?.tiktok} />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Footer: Input do Link e Ação */}
+                <div className="p-6 bg-white border-t border-gray-200 flex flex-col gap-4">
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-1">
+                            Link do Perfil no Google Maps (Obrigatório)
+                        </label>
+                        <input 
+                            type="text" 
+                            className="w-full border-2 border-indigo-100 rounded-lg p-3 text-sm focus:border-indigo-500 focus:ring-0 outline-none"
+                            placeholder="Ex: https://maps.app.goo.gl/..." 
+                            value={mapsLink} 
+                            onChange={e => setMapsLink(e.target.value)} 
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Este link será enviado ao cliente para ele ver o resultado (Modal Verde).</p>
+                    </div>
+
+                    <div className="flex justify-end gap-3">
+                        <button onClick={onClose} className="px-6 py-3 bg-gray-100 text-gray-700 font-bold rounded-lg hover:bg-gray-200">
+                            Cancelar
+                        </button>
+                        <button 
+                            onClick={() => onComplete(tenantId, request.referenceCode, mapsLink, false)} 
+                            disabled={!mapsLink}
+                            className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Concluir Tarefa
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -423,6 +552,7 @@ const SuperAdmin: React.FC = () => {
             const response = await fetch(`${FLUXOCLEAN_API}/admin/tenants/${tenantId}/complete-service`, { 
                 method: 'POST', 
                 headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, 
+                // Note: isEcommerce is passed but largely ignored by backend for 'google_maps' type which relies on type field
                 body: JSON.stringify({ referenceCode, mapsLink: resultLink, isEcommerce }), 
                 credentials: 'include' 
             }); 
@@ -800,7 +930,7 @@ const SuperAdmin: React.FC = () => {
                                                                         onClick={() => { setSelectedTenant(tenant); setModalType('telemetry'); }}
                                                                         className="text-[10px] flex items-center gap-1 text-indigo-600 font-bold hover:underline"
                                                                     >
-                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2-2z" /></svg>
+                                                                        <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2-2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 01-2-2z" /></svg>
                                                                         Ver Telemetria
                                                                     </button>
                                                                 </div>
